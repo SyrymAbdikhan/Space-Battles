@@ -108,7 +108,7 @@ class Spaceship:
         # getting current direction
         obj_dir = self.object.get_dir()
         # calculating velocity of bullet
-        vel = self.object.vel * 0.3 + obj_dir * self.bull_acc
+        vel = self.object.vel + obj_dir * self.bull_acc
         # determining position of the bullet
         pos = self.object.pos + obj_dir * (img.get_height()/2) * 1.1
         # creating a bullet
