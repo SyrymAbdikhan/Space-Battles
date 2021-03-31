@@ -110,7 +110,7 @@ class Spaceship:
         # calculating velocity of bullet
         vel = self.object.vel + obj_dir * self.bull_acc
         # determining position of the bullet
-        pos = self.object.pos + obj_dir * (img.get_height()/2) * 1.1
+        pos = self.object.pos + obj_dir * (img.get_height()/2) * 1.2
         # creating a bullet
         bullet = Bullet(pos, vel)
         bullets.append(bullet)
