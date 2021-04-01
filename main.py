@@ -28,19 +28,33 @@ def main():
     bullets = []
     # properties of each spaceship
     controller = [pygame.K_w, pygame.K_s, pygame.K_a, pygame.K_d, pygame.K_LSHIFT]
-    ship = entities.Spaceship((display_size[0]//4, display_size[1]//2), 0.03, 0.06, controller, "images/ship1")
+    ship = entities.Spaceship(
+        pos=(display_size[0]//4, display_size[1]//2),
+        angle=-90,
+        s_acc=0.03,
+        s_rot_acc=0.06,
+        controller=controller,
+        folder_name="images/ship1"
+    )
 
     controller2 = [pygame.K_UP, pygame.K_DOWN, pygame.K_LEFT, pygame.K_RIGHT, pygame.K_RSHIFT]
-    ship2 = entities.Spaceship((display_size[0]//4*3, display_size[1]//2), 0.03, 0.06, controller2, "images/ship2")
+    ship2 = entities.Spaceship(
+        pos=(display_size[0]//4*3, display_size[1]//2),
+        angle=-90,
+        s_acc=0.03,
+        s_rot_acc=0.06,
+        controller=controller2,
+        folder_name="images/ship2"
+    )
 
     while True:
 
         # getting pressed keys, updateing spaceships and checking if ship is on the screen
         keys = pygame.key.get_pressed()
         ship.update(keys, bullets)
-        check(ship.object.pos, display_size)
+        check(ship.pos, display_size)
         ship2.update(keys, bullets)
-        check(ship2.object.pos, display_size)
+        check(ship2.pos, display_size)
         # updating bullets
         for i, bullet in enumerate(bullets):
             # checking if bullet should be removed

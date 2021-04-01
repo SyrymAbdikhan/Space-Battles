@@ -7,19 +7,28 @@ import helper
 import pygame
 
 
-class Spaceship:
-    def __init__(self, pos, acc, rot_acc, controller, folder_name):
-        # entity physics and properties
-        self.object = physics.Object(pos)
-        self.acc = acc
-        self.rot_acc = rot_acc
+class Spaceship(physics.Object):
+    def __init__(
+        self,
+        pos=(0,0),
+        angle=0,
+        s_acc=0.05,
+        s_rot_acc=0.05,
+        controller=[pygame.K_w, pygame.K_s, pygame.K_a, pygame.K_d, pygame.K_LSHIFT],
+        folder_name="images/ship1"
+    ):
+        # object physics and properties
+        super().__init__(pos=pos, angle=angle)
+        # s means scalar then it turns it into vector
+        self.s_acc = s_acc
+        self.s_rot_acc = s_rot_acc
         self.controller = controller
         # initializing animations
         self.animations = load_animations(folder_name)
         self.state = "idle"
         self.anim_count = 0
         # bullet acceleration and cooldown between each shoot
-        self.bull_acc = 4
+        self.s_bull_acc = 4
         self.shoot_cooldown = helper.Timer(12)
         # health state and cooldown
         self.health = 20
@@ -29,20 +38,40 @@ class Spaceship:
         bullet_surf.fill((255,255,255))
         bullet_surf = bullet_surf.convert_alpha()
         self.bullet_mask = pygame.mask.from_surface(bullet_surf)
-
+    
+    def draw(self, surf):
+        # rotating image
+        img, rot_img, rect = self.get_img_rect()
+        surf.blit(rot_img, rect.topleft)
+        # determining health bar position and size
+        w = 40
+        w2 = w * self.health // 20
+        h = 5
+        x = self.pos.x - w//2
+        y = self.pos.y - (img.get_height() + h)
+        # drawing health bar
+        pygame.draw.rect(surf, (223,52,52), (x ,y, w, h))
+        pygame.draw.rect(surf, (113,205,83), (x ,y, w2, h))
+    
     def update(self, keys, bullets):
+        self.update_inputs(keys, bullets)
+        self.check_for_hits(bullets)
+        self.update_physics()
+        self.update_animation()
+
+    def update_inputs(self, keys, bullets):
         self.change_state("idle")
         if self.health > 0:
             # moving and rotating trigger
             if keys[self.controller[0]]:
-                self.object.move(self.acc)
+                self.move(self.s_acc)
                 self.change_state("moving")
             if keys[self.controller[1]]:
-                self.object.move(-self.acc*0.2)
+                self.move(-self.s_acc*0.2)
             if keys[self.controller[2]]:
-                self.object.rotate(-self.rot_acc)
+                self.rotate(-self.s_rot_acc)
             if keys[self.controller[3]]:
-                self.object.rotate(self.rot_acc)
+                self.rotate(self.s_rot_acc)
             # shooting trigger
             self.shoot_cooldown.update()
             if keys[self.controller[4]] and self.shoot_cooldown.do:
@@ -56,7 +85,8 @@ class Spaceship:
             if self.reset_cooldown.do:
                 self.health = 20
                 self.reset_cooldown.do = True
-        
+    
+    def check_for_hits(self, bullets):
         # checking for hits
         if bullets:
             # getting mask of rotated spaceship
@@ -65,7 +95,7 @@ class Spaceship:
             # looping through every bullet
             for i, bullet in enumerate(bullets):
                 # checking if bullet is nearby
-                dist = get_dist(self.object.pos, bullet.pos)
+                dist = get_dist(self.pos, bullet.pos)
                 if dist <= 20:
                     # calculating offset
                     offset = int(rect.x - bullet.pos.x), int(rect.y - bullet.pos.y)
@@ -73,29 +103,13 @@ class Spaceship:
                         if self.health > 0:
                             self.health -= 1
                         bullets.pop(i)
-                
-        # updating object physics
-        self.object.update()
-        
+    
+    def update_animation(self):
         # increasing count by 1 to the next anitmation
         self.anim_count += 1
         # making sure that count do not get out of range
         if self.anim_count >= len(self.animations[self.state]):
             self.anim_count = 0
-
-    def draw(self, surf):
-        # rotating image
-        img, rot_img, rect = self.get_img_rect()
-        surf.blit(rot_img, rect.topleft)
-        # determining health bar position and size
-        w = 40
-        w2 = w * self.health // 20
-        h = 5
-        x = self.object.pos.x - w//2
-        y = self.object.pos.y - (img.get_height() + h)
-        # drawing health bar
-        pygame.draw.rect(surf, (223,52,52), (x ,y, w, h))
-        pygame.draw.rect(surf, (113,205,83), (x ,y, w2, h))
     
     def change_state(self, state):
         if state in self.animations and self.state != state:
@@ -103,41 +117,37 @@ class Spaceship:
             self.anim_count = 0
     
     def add_bullet(self, bullets):
-        # getting idle image
-        img = self.animations["idle"][0]
-        # getting current direction
-        obj_dir = self.object.get_dir()
-        # calculating velocity of bullet
-        vel = self.object.vel + obj_dir * self.bull_acc
         # determining position of the bullet
-        pos = self.object.pos + obj_dir * (img.get_height()/2) * 1.2
+        pos = self.pos + self.get_dir() * (self.animations["idle"][0].get_height()/2) * 1.2
         # creating a bullet
-        bullet = Bullet(pos, vel)
+        bullet = Bullet(pos=pos, s_acc=self.s_bull_acc, vel=self.vel, angle=self.angle)
+        # shooting acceleration
+        bullet.move(bullet.s_acc)
         bullets.append(bullet)
     
     def get_img_rect(self):
         # getting current image
         img = self.animations[self.state][self.anim_count]
         # rotating image
-        rot_img = pygame.transform.rotate(img, -self.object.angle-90)
+        rot_img = pygame.transform.rotate(img, -self.angle-90)
         rect = rot_img.get_rect()
         # centering image
-        rect.center = self.object.pos
+        rect.center = self.pos
         return img, rot_img, rect
 
 
-class Bullet:
-    def __init__(self, pos, vel):
-        self.pos = pos
-        self.vel = vel
+class Bullet(physics.Object):
+    def __init__(self, pos=(0,0), vel=(0,0), s_acc=0.1, acc=(0,0), angle=0):
+        super().__init__(pos=pos, vel=vel, acc=acc, angle=angle)
+        self.s_acc = s_acc
         self.lifespan = 1200
     
     def draw(self, surf):
-        x, y = self.pos
-        pygame.gfxdraw.pixel(surf, int(x), int(y), (169,133,245))
+        x, y = map(int, self.pos)
+        pygame.gfxdraw.pixel(surf, x, y, (169,133,245))
     
     def update(self):
-        self.pos += self.vel
+        self.update_physics()
         self.lifespan -= 1
 
 

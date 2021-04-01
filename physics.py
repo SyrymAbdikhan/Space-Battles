@@ -7,23 +7,24 @@ Vector = pygame.math.Vector2
 
 
 class Object:
-    def __init__(self, pos):
-        self.pos = Vector(*pos)
-        self.vel = Vector(0, 0)
-        self.acc = Vector(0, 0)
-        # rotation angle
-        self.angle = -90
+    def __init__(self, pos=(0,0), vel=(0,0), acc=(0,0), angle=0):
+        self.pos = Vector(pos)
+        self.vel = Vector(vel)
+        self.acc = Vector(acc)
+        # rotation angle in degrees
+        self.angle = angle
         self.count = 0
         # stopping speed
         self.acc_stopper = 0.999
         self.rot_acc_stopper = 0.985
     
-    def update(self):
-        # updating velocity and acceleration
+    def update_physics(self):
+        # updating velocity
         self.vel += self.acc
         # decreasing velocity just a little
         self.vel.x = self.mult(self.vel.x, self.acc_stopper)
         self.vel.y = self.mult(self.vel.y, self.acc_stopper)
+        # updating position and acceleration
         self.pos += self.vel
         self.acc *= 0
         # updating angle and decreasing count just a little
@@ -39,9 +40,9 @@ class Object:
         else:
             return 0
     
-    def move(self, n: int = 1):
+    def move(self, s_acc: int = 1):
         # moving object accordingly to the direction
-        self.acc += self.get_dir() * n
+        self.acc += self.get_dir() * s_acc
     
     def rotate(self, angle):
         # rotating an object
@@ -49,6 +50,7 @@ class Object:
     
     def get_dir(self):
         # getting direction of an angle
+        # turning dgree into radian
         rad = math.radians(self.angle)
         dirx = math.cos(rad)
         diry = math.sin(rad)
