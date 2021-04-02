@@ -33,6 +33,7 @@ class Spaceship(physics.Object):
         # health state and cooldown
         self.health = 20
         self.reset_cooldown = helper.Timer(600)
+        self.bar_size = (20,3)
         # making bullet mask for collision detection
         bullet_surf = pygame.Surface((1,1))
         bullet_surf.fill((255,255,255))
@@ -44,13 +45,12 @@ class Spaceship(physics.Object):
         img, rot_img, rect = self.get_img_rect()
         surf.blit(rot_img, rect.topleft)
         # determining health bar position and size
-        w = 40
+        w, h = self.bar_size
         w2 = w * self.health // 20
-        h = 5
         x = self.pos.x - w//2
-        y = self.pos.y - (img.get_height() + h)
+        y = self.pos.y - (img.get_height() + h // 2)
         # drawing health bar
-        pygame.draw.rect(surf, (223,52,52), (x ,y, w, h))
+        pygame.draw.rect(surf, (223,52,52), (x, y, w, h))
         pygame.draw.rect(surf, (113,205,83), (x ,y, w2, h))
     
     def update(self, keys, bullets):
